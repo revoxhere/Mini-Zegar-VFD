@@ -1,2 +1,4 @@
 # Mini-Zegar-VFD
-Pliki projektu mini zegara na lampie IV-21 (IW-21)
+Pliki projektu mini zegara na lampie VFD IW-21
+
+Mini IV-21 VFD clock source files
