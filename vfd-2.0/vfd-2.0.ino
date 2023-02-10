@@ -19,6 +19,7 @@ OneWire oneWire(oneWireBus);
 // Pass our oneWire reference to Dallas Temperature sensor
 DallasTemperature sensor(&oneWire);
 
+
 #pragma GCC optimize ("-Ofast")
 
 const byte znaki[8] = { 0, 1, 2, 3, 4, 5, 6, 7 };
@@ -31,14 +32,14 @@ Adafruit_PCF8574 pcf;
 #include <WiFi.h>
 WiFiClientSecure client;
 HTTPClient http;
-const char* WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather?lat=53.04&lon=18.6&appid=XXXXXXXXXxx&units=metric";
+const char* WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather?lat=53.04&lon=18.6&appid=XXXXXXXXXXX&units=metric";
 float temperatura = -100.0;
 float temperatura_odczuwalna = -100.0;
 unsigned int cisnienie = -100;
 unsigned int wilgotnosc = -100;
 float temperatureC = 0;
 
-int LEDY[5] = {18, 4, 16, 17, 5};
+const byte LEDY[5] = {18, 4, 16, 17, 5};
 #include <WiFiManager.h>
 WiFiManager wifiManager;
 
@@ -67,7 +68,6 @@ byte aktualnyLed = 0;
 unsigned long lastWeather = 1;
 bool pogodaPobrana = false;
 void setup() {
-
   delay(500);
   Serial.begin(115200);
   Serial.println("Mini zegar VFD by revox, 02.2023");
@@ -80,7 +80,6 @@ void setup() {
 
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
   Wire.begin(13, 14);
-  delay(1000);
 
   pinMode(25, INPUT_PULLUP);
   pinMode(27, INPUT_PULLUP);
@@ -154,6 +153,35 @@ void setup() {
     }
   }
 
+  ArduinoOTA
+  .onStart([]() {
+    String type;
+    if (ArduinoOTA.getCommand() == U_FLASH)
+      type = "sketch";
+    else // U_SPIFFS
+      type = "filesystem";
+
+    // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+    Serial.println("Start updating " + type);
+  })
+  .onEnd([]() {
+    Serial.println("\nEnd");
+  })
+  .onProgress([](unsigned int progress, unsigned int total) {
+    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  })
+  .onError([](ota_error_t error) {
+    Serial.printf("Error[%u]: ", error);
+    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+    else if (error == OTA_END_ERROR) Serial.println("End Failed");
+  });
+
+  ArduinoOTA.setHostname("Mini zegar VFD");
+  ArduinoOTA.begin();
+
   Serial.println("Pobieranie czasu...");
   animationStart = millis();
   aktualnyLed = 0;
@@ -209,43 +237,11 @@ void ustawCzas(void * pvParameters ) {
 
 void wlaczManagera( void * pvParameters ) {
   wifiManager.autoConnect("Mini zegar VFD");
-  wifiText = "192.168.1.4";
-
-  ArduinoOTA
-  .onStart([]() {
-    String type;
-    if (ArduinoOTA.getCommand() == U_FLASH)
-      type = "sketch";
-    else // U_SPIFFS
-      type = "filesystem";
-
-    // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-    Serial.println("Start updating " + type);
-  })
-  .onEnd([]() {
-    Serial.println("\nEnd");
-  })
-  .onProgress([](unsigned int progress, unsigned int total) {
-    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-  })
-  .onError([](ota_error_t error) {
-    Serial.printf("Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-    else if (error == OTA_END_ERROR) Serial.println("End Failed");
-  });
-
-  ArduinoOTA.begin();
-
+  wifiText = "192.168.4.1";
   for (;;) {
-    
     yield();
     wifiManager.process();
-    
     delay(10);
-    ArduinoOTA.handle();
   }
 }
 
@@ -665,5 +661,5 @@ void loop() {
     }
   }
 
-  //delay(ustawienieJasnosci);
+  ArduinoOTA.handle();
 }
