@@ -32,7 +32,7 @@ Adafruit_PCF8574 pcf;
 #include <WiFi.h>
 WiFiClientSecure client;
 HTTPClient http;
-const char* WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather?lat=53.04&lon=18.6&appid=XXXXXXXXXXX&units=metric";
+const char* WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather?lat=53.04&lon=18.6&appid=XXXXXXXXXXXX&units=metric";
 float temperatura = -100.0;
 float temperatura_odczuwalna = -100.0;
 unsigned int cisnienie = -100;
@@ -68,7 +68,6 @@ byte aktualnyLed = 0;
 unsigned long lastWeather = 1;
 bool pogodaPobrana = false;
 void setup() {
-  delay(500);
   Serial.begin(115200);
   Serial.println("Mini zegar VFD by revox, 02.2023");
 
@@ -86,6 +85,7 @@ void setup() {
 
   encoder.attachHalfQuad(25, 27);
   encoder.clearCount();
+  encoder.setFilter(1023);
 
   Wire.setClock(400000);
   pinMode(15, OUTPUT);
@@ -116,9 +116,9 @@ void setup() {
   }
 
   Serial.println("Lacznie z WiFi...");
-  wifiManager.setConnectTimeout(20);
+  wifiManager.setConnectTimeout(60);
   wifiManager.setConfigPortalBlocking(false);
-  xTaskCreatePinnedToCore(wlaczManagera, "wlaczManagera", 10000, NULL, 1, &Task1, 0);
+  xTaskCreatePinnedToCore(wlaczManagera, "wlaczManagera", 20000, NULL, 1, &Task1, 0);
 
   animationStart = millis();
   aktualnyLed = 0;
@@ -246,7 +246,6 @@ void wlaczManagera( void * pvParameters ) {
 }
 
 void updateWeather(void * pvParameters) {
-  delay(5000);
   client.setInsecure();
   http.useHTTP10(true);
 
@@ -267,11 +266,11 @@ void updateWeather(void * pvParameters) {
       cisnienie = main["pressure"];
       Serial.println("Pogoda zaktualizowana");
       pogodaPobrana = true;
-      delay(1000 * 120);
+      delay(110 * 1000);
     }
 
     http.end();
-    delay(5000);
+    delay(10 * 1000);
   }
 }
 
@@ -553,8 +552,8 @@ void loop() {
 
   newPosition = (encoder.getCount() / 2);
   if (newPosition > 4) {
-    newPosition = 0;
-    encoder.setCount(0);
+    newPosition = 4;
+    encoder.setCount(8);
   }
   if (newPosition < 0) {
     newPosition = 0;
@@ -564,7 +563,7 @@ void loop() {
   if (newPosition != oldPosition) {
     oldPosition = newPosition;
     lastEncoder = millis();
-    lastWeather =  millis() + 1000;
+    lastWeather =  millis() + 3000;
     lastN = newPosition;
   }
 
@@ -634,7 +633,7 @@ void loop() {
         displayText(String(cisnienie) + " hPa");
         zapalLed(3);
       }
-    } else if (lastN == 3 || (newPosition == 4 && millis() - lastEncoder < 5000) || (newPosition == 3 && stoj )  ) {
+    } else if (lastN == 3 || (newPosition == 4 && millis() - lastEncoder < 5000) || (newPosition == 4 && stoj )  ) {
       li += 1;
       if (li >= 300 && !stoj) {
         lastWeather = millis();
